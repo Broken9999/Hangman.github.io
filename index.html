@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            text-align: center;
+            width: 300px;
+        }
+        #hangman {
+            font-family: monospace;
+            white-space: pre;
+            margin-bottom: 20px;
+        }
+        .word {
+            font-size: 24px;
+            letter-spacing: 5px;
+            margin: 20px 0;
+        }
+        .message {
+            font-size: 18px;
+            color: red;
+            margin: 10px 0;
+        }
+        .title {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .lives {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            margin-right: 5px;
+            background: #fff;
+            color: black;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Hangman Game</div>
+        <div id="hangman">
+            +---+
+            |   |
+                |
+                |
+                |
+                |
+            =========
+        </div>
+        <div class="word" id="word"></div>
+        <input type="text" id="guess" maxlength="1" placeholder="Guess a letter">
+        <button onclick="makeGuess()">Guess</button>
+        <div class="lives" id="lives"></div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const stages = [
+            `
+            +---+
+            |   |
+            O   |
+           /|\\  |
+           / \\  |
+                |
+            =========
+            `,
+            `
+            +---+
+            |   |
+            O   |
+           /|\\  |
+           /    |
+                |
+            =========
+            `,
+            `
+            +---+
+            |   |
+            O   |
+           /|\\  |
+                |
+                |
+            =========
+            `,
+            `
+            +---+
+            |   |
+            O   |
+           /|   |
+                |
+                |
+            =========`,
+            `
+            +---+
+            |   |
+            O   |
+            |   |
+                |
+                |
+            =========
+            `,
+            `
+            +---+
+            |   |
+            O   |
+                |
+                |
+                |
+            =========
+            `,
+            `
+            +---+
+            |   |
+                |
+                |
+                |
+                |
+            =========
+            `
+        ];
+
+        const wordList = [
+            'abruptly', 'absurd', 'abyss', 'affix', 'askew', 'avenue', 'awkward', 
+            'axiom', 'azure', 'bagpipes', 'bandwagon', 'banjo', 'bayou', 'beekeeper', 
+            'bikini', 'blitz', 'blizzard', 'boggle', 'bookworm', 'boxcar', 'boxful', 
+            'buckaroo', 'buffalo', 'buffoon', 'buxom', 'buzzard', 'buzzing', 'buzzwords', 
+            'caliph', 'cobweb', 'cockiness', 'croquet', 'crypt', 'curacao', 'cycle', 
+            'daiquiri', 'dirndl', 'disavow', 'dizzying', 'duplex', 'dwarves', 'embezzle', 
+            'equip', 'espionage', 'euouae', 'exodus', 'faking', 'fishhook', 'fixable', 
+            'fjord', 'flapjack', 'flopping', 'fluffiness', 'flyby', 'foxglove', 'frazzled', 
+            'frizzled', 'fuchsia', 'funny', 'gabby', 'galaxy', 'galvanize', 'gazebo', 
+            'giaour', 'gizmo', 'glowworm', 'glyph', 'gnarly', 'gnostic', 'gossip', 
+            'grogginess', 'haiku', 'haphazard', 'hyphen', 'iatrogenic', 'icebox', 'injury', 
+            'ivory', 'ivy', 'jackpot', 'jaundice', 'jawbreaker', 'jaywalk', 'jazziest', 
+            'jazzy', 'jelly', 'jigsaw', 'jinx', 'jiujitsu', 'jockey', 'jogging', 
+            'joking', 'jovial', 'joyful', 'juicy', 'jukebox', 'jumbo', 'kayak', 'kazoo', 
+            'keyhole', 'khaki', 'kilobyte', 'kiosk', 'kitsch', 'kiwifruit', 'klutz', 
+            'knapsack', 'larynx', 'lengths', 'lucky', 'luxury', 'lymph', 'marquis', 
+            'matrix', 'megahertz', 'microwave', 'mnemonic', 'mystify', 'naphtha', 
+            'nightclub', 'nowadays', 'numbskull', 'nymph', 'onyx', 'ovary', 'oxidize', 
+            'oxygen', 'pajama', 'peekaboo', 'phlegm', 'pixel', 'pizazz', 'pneumonia', 
+            'polka', 'pshaw', 'psyche', 'puppy', 'puzzling', 'quartz', 'queue', 
+            'quips', 'quixotic', 'quiz', 'quizzes', 'quorum', 'razzmatazz', 'rhubarb', 
+            'rhythm', 'rickshaw', 'schnapps', 'scratch', 'shiv', 'snazzy', 'sphinx', 
+            'spritz', 'squawk', 'staff', 'strength', 'strengths', 'stretch', 
+            'stronghold', 'stymied', 'subway', 'swivel', 'syndrome', 'thriftless', 
+            'thumbscrew', 'topaz', 'transcript', 'transgress', 'transplant', 'triphthong', 
+            'twelfth', 'twelfths', 'unknown', 'unworthy', 'unzip', 'uptown', 'vaporize', 
+            'vixen', 'vodka', 'voodoo', 'vortex', 'voyeurism', 'walkway', 'waltz', 
+            'wave', 'wavy', 'waxy', 'wellspring', 'wheezy', 'whiskey', 'whizzing', 
+            'whomever', 'wimpy', 'witchcraft', 'wizard', 'woozy', 'wristwatch', 
+            'wyvern', 'xylophone', 'yachtsman', 'yippee', 'yoked', 'youthful', 'yummy', 
+            'zephyr', 'zigzag', 'zigzagging', 'zilch', 'zipper', 'zodiac', 'zombie',
+            'minecraft'
+        ];
+
+        let chosenWord = wordList[Math.floor(Math.random() * wordList.length)];
+        let wordLength = chosenWord.length;
+        let display = Array(wordLength).fill('_');
+        let lives = stages.length - 1;
+        let gameIsFinished = false;
+
+        document.getElementById('word').textContent = display.join(' ');
+        document.getElementById('lives').textContent = `Lives: ${lives}`;
+
+        function makeGuess() {
+            if (gameIsFinished) return;
+
+            let guess = document.getElementById('guess').value.toLowerCase();
+            document.getElementById('guess').value = '';
+
+            if (guess.length !== 1) {
+                document.getElementById('message').textContent = 'Please enter a single letter.';
+                return;
+            }
+
+            if (display.includes(guess)) {
+                document.getElementById('message').textContent = `You've already guessed ${guess}`;
+                return;
+            }
+
+            let correctGuess = false;
+            for (let i = 0; i < wordLength; i++) {
+                if (chosenWord[i] === guess) {
+                    display[i] = guess;
+                    correctGuess = true;
+                }
+            }
+
+            if (!correctGuess) {
+                lives--;
+                document.getElementById('message').textContent = `You guessed ${guess}, that's not in the word. You lose a life.`;
+            } else {
+                document.getElementById('message').textContent = '';
+            }
+
+            document.getElementById('word').textContent = display.join(' ');
+            document.getElementById('hangman').textContent = stages[lives];
+            document.getElementById('lives').textContent = `Lives: ${lives}`;
+
+            if (lives === 0) {
+                gameIsFinished = true;
+                document.getElementById('message').textContent = `Game Over! The word was "${chosenWord}".`;
+            } else if (!display.includes('_')) {
+                gameIsFinished = true;
+                document.getElementById('message').textContent = 'Congratulations! You win!';
+            }
+        }
+    </script>
+</body>
+</html>
